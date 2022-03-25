@@ -1,0 +1,86 @@
+﻿@page "/harvests"
+@using FarmManager.Shared.ViewModels
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using FarmManager.Shared
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager navManager
+
+<PageTitle>Pola</PageTitle>
+
+<div>
+    <a href="plantations/form" class="btn btn-primary float-end">Dodaj Uprawę</a>
+</div>
+
+<h4>Żniwa</h4>
+<hr />
+
+@if (PlantationViewModels == null)
+{
+    <p><em>Wczytywanie...</em></p>
+}
+else if (PlantationViewModels != null && PlantationViewModels.Count() == 0)
+{
+    <p>Brak żniw. Utwórz żniwa z plantacji aby pojawiły sięna liście.</p>
+}
+else
+{
+    <table class="table table-hover text-center">
+        <thead>
+            <tr>
+                <th class="hover">Lp</th>
+                <th>Numer działki</th>
+                <th>Lokalizacja</th>
+                <th>Powierzchnia [ha]</th>
+                <th>Roślina</th>
+                <th>Data siewu</th>
+                <th>Data zbioru</th>
+                <th>Plonn [kg]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var model in PlantationViewModels)
+            {
+                <tr @onclick="() => RowClicked(model.Plantation.Id)">
+                    <td>@counter</td>
+                    <td>@model.Field?.PlotNumber</td>
+                    <td>@model.Field?.Location</td>
+                    <td>@model.Plantation.Area</td>
+                    <td>@model.Plantation.Plant?.Name</td>
+                    <td>@model.Plantation.SowingDate.ToString("dd.MM.yyyy")</td>
+                    <td>@model.Plantation.HarvestingDate.Value.ToString("dd.MM.yyyy")</td>
+                    <td>@model.Plantation.Croop</td>
+                </tr>
+                counter += 1;
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private int counter;
+    public List<PlantationViewModel>? PlantationViewModels { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        PlantationViewModels = new List<PlantationViewModel>();
+
+        counter = 1;
+        try
+        {
+            var plantationViewModels = await Http.GetFromJsonAsync<List<PlantationViewModel>>("Plantations");
+
+            PlantationViewModels = plantationViewModels.Where(x => x.Plantation.Harvested).ToList();
+        }
+        catch
+        {
+
+        }
+    }
+
+    private void RowClicked(int plantationId)
+    {
+        navManager.NavigateTo($"Plantations/details/{plantationId}");
+    }
+}

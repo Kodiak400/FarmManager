@@ -1,0 +1,137 @@
+﻿@page "/calculators/crops"
+@using FarmManager.Shared
+
+@inject HttpClient _client;
+@inject NavigationManager navManager;
+
+<PageTitle>Kalkulator wycieleń</PageTitle>
+
+<h1 style="text-align: center">Kalkulator plonów</h1>
+<h3 style="text-align: center"> Wprowadź powierzchnię w celu uzyskania wyniku</h3>
+
+
+<div style="justify-content: center" class="row">
+    <div style="text-align: center" class="col-3">
+        <label for="area" class="form-label">Powierzchnia [ha]</label>
+        <input id="area" type="number" class="form-control" @bind="@Area" @bind:event="onchange" />
+        Roślina
+        <select class="form-control" @bind="@SelectedPlant" @bind:event="onchange">
+            <option></option>
+            @if (Plants?.Count() > 0)
+            {
+                @foreach (var plant in Plants)
+                {
+                    <option value="@plant.Id">@plant.Name</option>
+                }
+            }
+        </select>
+        <label for="price" class="form-label">Cena za tonę [zł]</label>
+        <input id="price" type="number" class="form-control" @bind="@Price" @bind:event="onchange" />
+
+        <button class="btn btn-primary mt-3" @onclick="Calculate">Oblicz</button>
+        <hr />
+        <h5>Przewidywany plon</h5>
+        <h4 class="mt-2">@CropWeight kg</h4>
+        <hr />
+        <h5>Wartość plonu</h5>
+        <h4 class="mt-2">@CropValue zł</h4>
+        @if (CropWeight != 0)
+        {
+            <EditForm Model="@Result" OnValidSubmit="@SaveResult">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="row text-start">
+                    <div class="col mb-2">
+                        <label for="resultName" class="form-label">Nazwa wyniku</label>
+                        <InputText id="resultName" class="form-control" @bind-Value="@Result.Name" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div style="text-align: center" class="col">
+                        <button type="submit" class="btn btn-primary">Zapisz</button>
+                    </div>
+                </div>
+            </EditForm>
+        }
+    </div>
+    <div class="row mt-3"></div>
+    <div style="justify-content: center" class="row">
+        <hr>
+        <div class="col-6">
+            <table class="table table-bordered text-center">
+                <thead>
+                    <tr>
+                        <th>Nazwa</th>
+                        <th>Roślina</th>
+                        <th>Przewidywany plon</th>
+                        <th>Przewidywana wartość</th>
+                        <th style="width: 15%">Usuń</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Results != null)
+                    {
+                        @foreach (var result in Results)
+                        {
+                            <tr>
+                                <th>@result?.Name</th>
+                                <th>@result?.CropName</th>
+                                <th>@result?.CropWeight</th>
+                                <th>@result?.CropValue</th>
+                                <th><button class="btn btn-primary" type="button" @onclick="() => RemoveResult(result.Id)">Usuń</button></th>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    public int SelectedPlant { get; set; }
+    public double Area { get; set; }
+    public double Price { get; set; }
+    public double CropValue { get; set; }
+    public double CropWeight { get; set; }
+    public List<Plant>? Plants { get; set; }
+    public CropsCalculatorResult Result { get; set; }
+    public List<CropsCalculatorResult> Results { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Plants = await _client.GetFromJsonAsync<List<Plant>>("Plants");
+
+        Result = new CropsCalculatorResult();
+        Results = await _client.GetFromJsonAsync<List<CropsCalculatorResult>>("CropsCalculatorResults");
+    }
+
+    private void Calculate()
+    {
+        if (Plants != null)
+        {
+            var averageCrop = Plants.Single(x => x.Id == SelectedPlant).AverageCrop;
+
+            CropWeight = averageCrop * Area;
+            CropValue = (CropWeight / 1000) * Price;
+        }
+    }
+
+    private void SaveResult()
+    {
+        Result.CropWeight = CropWeight;
+        Result.CropValue = CropValue;
+        Result.CropName = Plants.Single(x => x.Id == SelectedPlant).Name;
+
+
+        _client.PostAsJsonAsync<CropsCalculatorResult>("CropsCalculatorResults", Result);
+        navManager.NavigateTo($"/calculators/crops", forceLoad: true);
+    }
+
+    private void RemoveResult(int id)
+    {
+        _client.DeleteAsync($"CropsCalculatorResults/{id}");
+        navManager.NavigateTo($"/calculators/crops", forceLoad: true);
+    }
+}

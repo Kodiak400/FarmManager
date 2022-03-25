@@ -1,0 +1,79 @@
+﻿@page "/fields/form/{fieldId:int?}"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.AspNetCore.Components
+@using FarmManager.Shared
+@using System.Collections.Generic;
+@using System.Text.Json;
+
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager navManager
+
+@if(FieldId == null)
+{
+    <h1>Dodaj pole</h1>
+}
+else
+{
+    <h1>Edytuj pole</h1>
+}
+<hr />
+<EditForm Model="@Field" OnValidSubmit="@SaveField">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                <p>
+                    <label for="plotNumber" class="form-label">Numer działki:</label>
+                    <InputText id="plotNumber" class="form-control" @bind-Value="Field.PlotNumber" />
+                </p>
+                <p>
+                    <label for="area" class="form-label">Powierznia</label>
+                    <InputNumber id="area" class="form-control" @bind-Value="Field.Area" />
+                </p>
+                <p>
+                    <label for="location" class="form-label">Lokalizacja</label>
+                    <InputText id="location" class="form-control" @bind-Value="Field.Location" />
+                </p>
+                <p>
+                    <label for="name" class="form-label">Nazwa:</label>
+                    <InputText id="name" class="form-control" @bind-Value="Field.Name" />
+                </p> 
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Zapisz</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int? FieldId { get; set; }
+        
+    public Field? Field { get; set; }
+
+    private async void SaveField()
+    {
+        if (FieldId != null)
+        {
+            Http.PutAsJsonAsync<Field>($"Fields/{FieldId}", Field);
+            navManager.NavigateTo($"Fields");
+        }
+        else
+        {
+            Http.PostAsJsonAsync<Field>("Fields", Field);     
+            navManager.NavigateTo($"Fields");
+        }
+    }      
+
+    protected override async Task OnInitializedAsync()
+    {
+        Field = new Field();
+
+        if (FieldId != null)
+        {
+            Field = await Http.GetFromJsonAsync<Field>($"Fields/{FieldId}");            
+        }
+    }
+}

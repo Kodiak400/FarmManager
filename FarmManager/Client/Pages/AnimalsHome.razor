@@ -1,0 +1,218 @@
+﻿@page "/animals"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using FarmManager.Shared
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager navManager
+
+<PageTitle>Stado</PageTitle>
+
+<div>
+    <a href="animals/form" class="btn btn-primary float-end">Dodaj zwierzę</a>
+</div>
+
+<h4>Stado</h4>
+<hr />
+
+<div class="container">
+    <div class="row">
+        <div class="col-3">
+            Numer identyfikacyjny
+            <input class="form-control" @bind="@FilterIdentityNumber" @bind:event="oninput" />
+            <hr />
+            Wyczyść filtry
+            <button class="btn btn-primary ms-5" @onclick="@ClearFiltersClicked">Wyczyść</button>
+        </div>
+        <div class="col-3">
+            Gatunek
+            <select class="form-control" @bind="@FilterSpecies" @bind:event="onchange">
+                <option></option>
+                @if (Species?.Count() > 0)
+                {
+                    @foreach (var species in Species)
+                    {
+                        <option value="@species.Id">@species.Name</option>
+                    }
+                }
+            </select>
+            Rasa
+            <select class="form-control" @bind="@FilterBreeds" @bind:event="onchange">
+                <option></option>
+                @if (Breeds?.Count() > 0)
+                {
+                    @foreach (var breed in Breeds)
+                    {
+                        <option value="@breed.Id">@breed.Name</option>
+
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-3">
+            Płeć
+            <select class="form-control" @bind="@FilterSexes" @bind:event="onchange">
+                <option></option>
+                @if (Sexes?.Count() > 0)
+                {
+                    @foreach (var sex in Sexes)
+                    {
+                        <option value="@sex.Id">@sex.Name</option>
+                    }
+                }
+            </select>
+            W stadzie
+            <select class="form-control" @bind="@FilterInHerd" @bind:event="onchange">
+                <option></option>
+                <option>TAK</option>
+                <option>NIE</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<br />
+
+@if (Animals == null)
+{
+    <p><em>Wczytywanie...</em></p>
+}
+else if (Animals != null && Animals.Count() == 0)
+{
+    <p>Brak zwierząt w stadzie.</p>
+}
+else
+{
+    <table class="table table-hover text-center">
+        <thead>
+            <tr>
+                <th class="hover">Lp</th>
+                <th>Nr identyfikacyjny</th>
+                <th>Data urodzenia</th>
+                <th>Gatunek</th>
+                <th>Rasa</th>
+                <th>Płeć</th>
+                <th>W stadzie</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var animal in Animals)
+            {
+                if (!(IsVisible(animal)))
+                {
+                    continue;
+                }
+                else
+                {
+                    <tr @onclick="() => RowClicked(animal.Id)">
+                        <td>@counter</td>
+                        <td>@animal.IdentityNumber</td>
+                        <td>@animal.Birthdate.Value.ToString("dd.MM.yyy")</td>
+                        <td>@animal.Species.Name</td>
+                        <td>@animal.Breed.Name</td>
+                        <td>@animal.Sex.Name</td>
+                        @if (@animal.OutcomeDate == null)
+                        {
+                            <td>TAK</td>
+                        }
+                        else
+                        {
+                            <td>NIE</td>
+                        }
+                    </tr>
+                    counter += 1;
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IEnumerable<Breed> breeds;
+    public string FilterIdentityNumber { get; set; }
+    public string FilterInHerd { get; set; }
+    public int? FilterSpecies { get; set; }
+    public int? FilterBreeds { get; set; }
+    public int? FilterSexes { get; set; }
+
+    private int counter;
+    private IEnumerable<Animal>? allAnimals;
+    private IEnumerable<Breed> allBreeds;
+    public IEnumerable<Animal>? Animals;
+    public IEnumerable<Sex>? Sexes { get; set; }
+    public IEnumerable<Species>? Species { get; set; }
+    public IEnumerable<Breed>? Breeds
+    {
+        get => GetBreeds();
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        counter = 1;
+        allAnimals = await Http.GetFromJsonAsync<IEnumerable<Animal>>("Animals");
+        Animals = allAnimals;
+        Sexes = await Http.GetFromJsonAsync<IEnumerable<Sex>>("Sexes");
+        Species = await Http.GetFromJsonAsync<IEnumerable<Species>>("Species");
+        breeds = await Http.GetFromJsonAsync<IEnumerable<Breed>>("Breeds");
+
+    }
+
+    private IEnumerable<Breed> GetBreeds()
+    {
+        if (FilterSpecies == null)
+            return breeds;
+        return breeds.Where(b => b.SpeciesId == FilterSpecies);
+    }
+
+    private void RowClicked(int animalId)
+    {
+        navManager.NavigateTo($"animals/details/{animalId}");
+    }
+
+    private void ClearFiltersClicked()
+    {
+        FilterIdentityNumber = null;
+        FilterBreeds = null;
+        FilterInHerd = null;
+        FilterSexes = null;
+        FilterSpecies = null;
+    }
+
+    public bool IsVisible(Animal animal)
+    {
+        bool idFilter = true;
+        bool herdFilter = true;
+        bool speciesFilter = true;
+        bool breedsFilter = true;
+        bool sexesFilter = true;
+
+        if (FilterIdentityNumber != null)
+        {
+            idFilter = animal.IdentityNumber.Contains(FilterIdentityNumber);
+        }
+
+        if (FilterInHerd != null)
+        {
+            var animalInHerd = animal.OutcomeDate == null;
+
+            if (FilterInHerd == "TAK" & animalInHerd)
+            {
+                herdFilter = true;
+            }
+            else if (FilterInHerd == "NIE" & animalInHerd)
+            {
+                herdFilter = false;
+            }
+        }
+
+        if (FilterSpecies != null)
+            speciesFilter = animal.SpeciesId == FilterSpecies;
+
+        if (FilterBreeds != null)
+            breedsFilter = animal.BreedId == FilterBreeds;
+
+        if (FilterSexes != null)
+            sexesFilter = animal.SexId == FilterSexes;
+
+        return (idFilter & herdFilter & speciesFilter & breedsFilter & sexesFilter);
+    }
+}

@@ -1,0 +1,167 @@
+﻿@page "/calculators/animals"
+@using FarmManager.Shared;
+
+@inject HttpClient _client;
+@inject NavigationManager navManager;
+
+<PageTitle>Kalkulator urodzeń</PageTitle>
+
+<h1 style="text-align: center">Kalkulator urodzeń</h1>
+<h3 style="text-align: center"> Wprowadź datę oraz wybierz gatunek w celu uzyskania wyniku</h3>
+
+
+<div style="justify-content: center" class="row">
+    <div style="text-align: center" class="col-3">
+        <label for="date" class="form-label">Data zapłodnienia:</label>
+        <input id="date" type="date" class="form-control" @bind="@SelectedDate" @bind:event="onchange" />
+        Gatunek
+        <select class="form-control" @bind="@SelectedSpecies" @bind:event="onchange">
+            <option value="bydlo">Bydło</option>
+            <option value="konie">Konie</option>
+            <option value="kozy">Kozy</option>
+            <option value="owce">Owce</option>
+        </select>
+
+        <button class="btn btn-primary mt-3" @onclick="Calculate">Oblicz</button>
+        <hr />
+        <h5>Przybliżona data urodzenia:</h5>
+        <h4 class="mt-2">@ResultDate</h4>
+        @if (@ResultDate != null)
+        {
+            <EditForm Model="@Result" OnValidSubmit="@SaveResult">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="row text-start">
+                    <div class="col mb-2">
+                        <label for="resultName" class="form-label">Nazwa wyniku</label>
+                        <InputText id="resultName" class="form-control" @bind-Value="@Result.Name" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div style="text-align: center" class="col">
+                        <button type="submit" class="btn btn-primary">Zapisz</button>
+                    </div>
+                </div>
+            </EditForm>
+        }
+    </div>
+    <div class="row mt-3"></div>
+    <div style="justify-content: center" class="row">
+        <hr>
+        <div class="col-6">
+            <table class="table table-bordered text-center">
+                <thead>
+                    <tr>
+                        <th>Nazwa</th>
+                        <th style="width: 40%">Przybliżona data urodzenia</th>
+                        <th style="width: 20%">Gatunek</th>
+                        <th style="width: 15%">Usuń</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Results != null)
+                    {
+                        @foreach (var result in Results)
+                        {
+                            <tr>
+                                <th>@result?.Name</th>
+                                <th>@result?.ResultDate</th>
+                                <th>@result?.SpeciesName</th>
+                                <th><button class="btn btn-primary" type="button" @onclick="() => RemoveResult(result.Id)">Usuń</button></th>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    public string SelectedSpecies { get; set; }
+    public DateTime SelectedDate { get; set; }
+    public string ResultDate { get; set; }
+    public AnimalsCalculatorResult? Result { get; set; }
+    public string? ResultName { get; set; }
+    public List<AnimalsCalculatorResult>? Results;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SelectedDate = DateTime.Now;
+        SelectedSpecies = "bydlo";
+        Result = new AnimalsCalculatorResult();
+        Results = await _client.GetFromJsonAsync<List<AnimalsCalculatorResult>>("AnimalsCalculatorResults");
+    }
+
+    private void SaveResult()
+    {
+        Result.ResultDate = ResultDate;
+        Result.SpeciesName = GetName();
+
+        _client.PostAsJsonAsync<AnimalsCalculatorResult>("AnimalsCalculatorResults", Result);
+        navManager.NavigateTo($"/calculators/animals", forceLoad: true);
+    }
+
+    private string GetName()
+    {
+        switch (SelectedSpecies)
+        {
+            case "bydlo":
+                {
+                    return "Bydło";
+                }
+            case "konie":
+                {
+                    return "Konie";
+                }
+            case "kozy":
+                {
+                    return "Kozy";
+                }
+            case "owce":
+                {
+                    return "Owce";
+                }
+            default:
+                {
+                    return "";
+                }
+        }
+    }
+
+    private void RemoveResult(int id)
+    {
+        _client.DeleteAsync($"AnimalsCalculatorResults/{id}");
+        navManager.NavigateTo($"/calculators/animals", forceLoad: true);
+    }
+
+    private void Calculate()
+    {
+        switch (SelectedSpecies)
+        {
+            case "bydlo":
+                {
+                    ResultDate = SelectedDate.AddDays(275).ToString("dd.MM.yyyy") + " do " +
+                        SelectedDate.AddDays(285).ToString("dd.MM.yyyy");
+                    break;
+                }
+            case "konie":
+                {
+                    ResultDate = SelectedDate.AddDays(355).ToString("dd.MM.yyyy");
+                    break;
+                }
+            case "kozy":
+                {
+                    ResultDate = SelectedDate.AddDays(146).ToString("dd.MM.yyyy") + " do " +
+                        SelectedDate.AddDays(159).ToString("dd.MM.yyyy");
+                    break;
+                }
+            case "owce":
+                {
+                    ResultDate = ResultDate = SelectedDate.AddDays(150).ToString("dd.MM.yyyy") + " do " +
+                        SelectedDate.AddDays(160).ToString("dd.MM.yyyy");
+                    break;
+                }
+        }
+    }
+}

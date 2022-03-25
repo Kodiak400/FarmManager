@@ -1,0 +1,76 @@
+﻿@page "/"
+@using FarmManager.Shared
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager navManager
+<PageTitle>FarmManager</PageTitle>
+
+<h1>Poradniki</h1>
+<hr />
+<br />
+@if ((bool)authenticated)
+{
+    @if (Articles != null)
+    {
+        @foreach (var article in Articles)
+        {
+            if ((bool)isAdmin)
+            {
+                <div class="row">
+                    <div class="col">
+                        <h4 @onclick="() => ShowArticle(article.Id)">@article.Title</h4>
+                    </div>
+                    <div class="col">
+                        <button style="align-self: start" type="button" class="btn btn-danger" @onclick="() => DeleteArticle(article.Id)">Usuń</button>
+                    </div>
+                </div>
+                <br />
+            }
+            else
+            {
+                <h4 @onclick="() => ShowArticle(article.Id)">@article.Title</h4>
+            }
+
+        }
+    }
+}
+else
+{
+    <p>Zaloguj się aby kontynuować.</p>
+}
+
+@code {
+    private bool? isAdmin = false;
+    private bool? authenticated = false;
+    public List<Article>? Articles { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await AuthenticationStateProvider?.GetAuthenticationStateAsync();
+
+        var user = authenticationState?.User;
+
+        if (user != null)
+            isAdmin = user?.Identity?.Name?.Equals("admin@admin.pl");
+
+        if (authenticationState != null)
+            authenticated = (bool)authenticationState?.User?.Identity?.IsAuthenticated;
+
+        if ((bool)authenticated)
+        {
+            Articles = await Http.GetFromJsonAsync<List<Article>>("Articles");
+
+        }
+    }
+
+    private void DeleteArticle(int id)
+    {
+        Http.DeleteAsync($"Articles/{id}");
+        navManager.NavigateTo("/", forceLoad: true);
+    }
+
+    private void ShowArticle(int id)
+    {
+        navManager.NavigateTo($"Articles/{id}");
+    }
+}

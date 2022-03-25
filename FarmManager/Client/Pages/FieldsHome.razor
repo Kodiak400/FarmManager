@@ -1,0 +1,84 @@
+﻿@page "/fields"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using FarmManager.Shared
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager navManager
+
+<PageTitle>Pola</PageTitle>
+
+<div>
+    <a href="fields/form" class="btn btn-primary float-end">Dodaj Pole</a>
+</div>
+
+<h4>Pola</h4>
+<hr />
+
+@if (Fields == null)
+{
+    <p><em>Wczytywanie...</em></p>
+}
+else if (Fields != null && Fields.Count() == 0)
+{
+    <p>Brak zarejestrowanych pól. Dodaj pole aby wyświetliło się na liście.</p>
+}
+else
+{
+    <table class="table table-hover text-center">
+        <thead>
+            <tr>
+                <th class="hover">Lp</th>
+                <th>Nr działki</th>
+                <th>Powierzchnia [ha]</th>
+                <th>Powierzchnia upraw [ha]</th>
+                <th>Lokalizacja</th>
+                <th>Nazwa</th>
+                <th>Ilość upraw</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var field in Fields)
+            {
+                if (!(IsVisible(field)))
+                {
+                    continue;
+                }
+                else
+                {
+                    <tr @onclick="() => RowClicked(field.Id)">
+                        <td>@counter</td>
+                        <td>@field.PlotNumber</td>
+                        <td>@field.Area</td>
+                        <td>@field.SowedArea</td>
+                        <td>@field.Location</td>
+                        <td>@field.Name</td>
+                        <td>@field.Plantations?.Count</td>
+                    </tr>
+                    counter += 1;
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private int counter;
+    public List<Field>? Fields { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        counter = 1;
+        Fields = await Http.GetFromJsonAsync<List<Field>>("Fields");        
+    }
+
+    private void RowClicked(int fieldId)
+    {
+        navManager.NavigateTo($"field/details/{fieldId}");
+    }
+
+    public bool IsVisible(Field field)
+    {
+        return true;
+    }
+}

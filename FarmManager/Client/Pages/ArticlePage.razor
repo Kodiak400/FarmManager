@@ -1,0 +1,33 @@
+﻿@page "/Articles/{ArticleId:int}"
+@using FarmManager.Shared
+@inject HttpClient Http
+
+@if (Article != null)
+{
+    <h3>@Article?.Title</h3>
+    <hr />
+
+    <br />
+    @foreach (var paragraph in Article?.Paragraphs)
+    {
+        <h3>@paragraph?.Header</h3>
+        <div class="col">@paragraph?.Content</div>
+        <br/>
+    }
+}
+else
+{
+    <p>Wczytywanie...</p>
+}
+
+@code {
+    [Parameter]
+    public int? ArticleId { get; set; }
+
+    public Article? Article { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Article = await Http.GetFromJsonAsync<Article>($"Articles/{ArticleId}");
+    }
+}

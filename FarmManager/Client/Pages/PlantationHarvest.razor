@@ -1,0 +1,61 @@
+﻿@page "/plantations/harvest/{plantationId:int}"
+@using FarmManager.Shared.ViewModels
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.AspNetCore.Components
+@using FarmManager.Shared
+@using RestSharp;
+@using System.Collections.Generic;
+@using System.Text.Json;
+
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject IJSRuntime JsRuntime
+
+<h1>Żniwa</h1>
+<hr />
+<EditForm Model="@Plantation" OnValidSubmit="@SavePlantation">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div style="justify-content: center" class="row">
+    <div style="text-align: center" class="col-4">
+            <div class="col">
+                <p>
+                    <label for="harvestingDate">Data żniw</label>
+                    <InputDate id="harvestingDate" class="form-control" @bind-Value="Plantation.HarvestingDate" />
+                </p>
+                <p>
+                    <label for="crop" class="form-label">Plon [kg]</label>
+                    <InputNumber id="crop" class="form-control" @bind-Value="Plantation.Croop" />
+                </p>
+            </div>
+        </div>
+    </div>
+    <div style="justify-content: center" class="row">
+    <button style="width: 10%" type="submit" class="btn btn-primary">Żniwa!</button>
+    </div>
+</EditForm>
+
+
+@code {
+    [Parameter]
+    public int? PlantationId { get; set; }
+    public Plantation? Plantation { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Plantation = new Plantation();
+
+        var plantationViewModel = await Http.GetFromJsonAsync<PlantationViewModel>($"Plantations/{PlantationId}");
+
+        Plantation = plantationViewModel.Plantation;
+    }
+
+    private async void SavePlantation()
+    {
+        Plantation.Harvested = true;
+        await Http.PutAsJsonAsync<Plantation>($"Plantations/{PlantationId}", Plantation);
+        NavManager.NavigateTo($"Plantations");
+    }
+}

@@ -1,0 +1,101 @@
+﻿@page "/plantations/details/{plantationId:int}"
+@using FarmManager.Shared.ViewModels
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.AspNetCore.Components
+@using FarmManager.Shared
+@using RestSharp;
+@using System.Collections.Generic;
+@using System.Text.Json;
+
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject IJSRuntime JsRuntime
+
+<h1>Szczegóły</h1>
+<hr />
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <table class="table-borderless">
+                <tr>
+                    <td>Numer działki: </td>
+                    <td class="fw-bold"> @Model?.Field?.PlotNumber</td>
+                </tr>
+                <tr>
+                    <td>Lokalizacja: </td>
+                    <td class="fw-bold text-right"> @Model?.Field?.Location</td>
+                </tr>
+                <tr>
+                    <td>Nazwa: </td>
+                    <td class="fw-bold"> @Model?.Plantation?.Name</td>
+                </tr>
+                <tr>
+                    <td>Data zasiewu: </td>
+                    <td class="fw-bold"> @Model?.Plantation?.SowingDate.ToString("dd.MM.yyy")</td>
+                </tr>
+                <tr>
+                    <td>Powierzchnia: </td>
+                    <td class="fw-bold"> @Model?.Plantation?.Area ha</td>
+                </tr>
+                <tr>
+                    <td>Roślina: </td>
+                    <td class="fw-bold"> @Model?.Plantation?.Plant?.Name</td>
+                </tr>
+                <tr>
+                    <td>Etap wzrostu: </td>
+                    <td class="fw-bold"> @Model?.Plantation?.Growth?.Name</td>
+                </tr>
+                @if (@Model != null)
+                {
+                    if (@Model.Plantation.Harvested)
+                    {
+                        <tr>
+                            <td>Data zbioru: </td>
+                            <td class="fw-bold"> @Model?.Plantation?.HarvestingDate?.ToString("dd.MM.yyyy")</td>
+                        </tr>
+                        <tr>
+                            <td>Plon: </td>
+                            <td class="fw-bold"> @Model?.Plantation?.Croop kg</td>
+                        </tr>
+                    }
+                }
+            </table>
+            @if (@Model != null)
+            {
+                @if (@Model.Plantation.Harvested)
+                {
+                    <a class="btn btn-danger" @onclick="DeletePlantation">Usuń</a>
+                }
+                else
+                {
+                    <a href="plantations/form/@Model?.Plantation.Id" class="btn btn-primary">Edytuj</a>
+                    <a href="plantations/harvest/@Model?.Plantation.Id" class="btn btn-primary">Żniwa</a>
+                    <a class="btn btn-danger" @onclick="DeletePlantation">Usuń</a>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int? PlantationId { get; set; }
+    private PlantationViewModel? Model { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Model = await Http.GetFromJsonAsync<PlantationViewModel>($"Plantations/{PlantationId}");
+    }
+
+    private async Task DeletePlantation()
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Czy napewno chcesz usunąć tą uprawę?");
+        if (confirmed)
+        {
+            await Http.DeleteAsync($"Plantations/{PlantationId}");
+            NavManager.NavigateTo($"Plantations");
+        }
+    }
+}

@@ -1,0 +1,70 @@
+﻿@page "/Articles"
+@using FarmManager.Shared
+@inject HttpClient Http
+@inject NavigationManager navManager
+
+<h3>Dodaj poradnik</h3>
+<hr />
+
+<EditForm Model="@Article" OnValidSubmit="@SaveArticle">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-4">
+                <p>
+                    <label for="title" class="form-label">Tytuł Poradninka</label>
+                    <InputText id="title" class="form-control" @bind-Value="Article.Title" />
+                </p>
+                Dodaj akapit.
+                <p>
+                    <label for="header" class="form-label">Nagłówek</label>
+                    <InputText id="header" class="form-control" @bind-Value="Paragraph.Header" />
+                </p>
+                <p>
+                    <label for="content" class="form-label">Treść</label>
+                    <InputText id="content" class="form-control" @bind-Value="Paragraph.Content" />
+                </p>
+                <div  class="row">
+                    <div class="col">
+                        <button class="btn btn-primary" type="button" @onclick="@AddParagraph">Dodaj</button>
+                    </div>
+                    <div class="col">
+                         <button style="align-self: end" type="submit" class="btn btn-primary">Zapisz Poradik</button>
+                    </div>                    
+                </div>
+                <hr />
+                Lista Akapitów
+                @foreach (var par in Article.Paragraphs)
+                {
+                    <p>@par.Header</p>
+                }
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    public Article? Article { get; set; }
+    public Paragraph? Paragraph { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Article = new Article();
+        Article.Paragraphs = new List<Paragraph>();
+        Paragraph = new Paragraph();
+    }
+
+    private void SaveArticle()
+    {
+        Http.PostAsJsonAsync("Articles",Article);
+        navManager.NavigateTo($"/");
+    }
+
+    private void AddParagraph()
+    {
+        Article.Paragraphs.Add(Paragraph);
+        Paragraph = new Paragraph();
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,94 @@
+﻿@page "/animals/details/{animalId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.AspNetCore.Components
+@using FarmManager.Shared
+@using RestSharp;
+@using System.Collections.Generic;
+@using System.Text.Json;
+
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject IJSRuntime JsRuntime
+
+<h1>Szczegóły</h1>
+<hr />
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <table class="table-borderless">
+                <tr>
+                    <td>Numer identyfikacyjny: </td>
+                    <td class="fw-bold"> @Animal?.IdentityNumber</td>
+                </tr>
+                <tr>
+                    <td>Numer identyfikacyjny matki: </td>
+                    <td class="fw-bold text-right"> @Animal?.MotherIdentityNumber</td>
+                </tr>
+                <tr>
+                    <td>Nazwa: </td>
+                    <td class="fw-bold"> @Animal?.Name</td>
+                </tr>
+                <tr>
+                    <td>Data urodzenia: </td>
+                    <td class="fw-bold"> @Animal?.Birthdate.Value.ToString("dd.MM.yyy")</td>
+                </tr>
+                <tr>
+                    <td>Data przybycia do stada: </td>
+                    <td class="fw-bold"> @Animal?.IncomeDate.Value.ToString("dd.MM.yyy")</td>
+                </tr>
+                <tr>
+                    <td>Płeć: </td>
+                    <td class="fw-bold"> @Animal?.Sex?.Name</td>
+                </tr>
+                <tr>
+                    <td>Gatunek: </td>
+                    <td class="fw-bold"> @Animal?.Species?.Name</td>
+                </tr>
+                <tr>
+                    <td>Rasa: </td>
+                    <td class="fw-bold"> @Animal?.Breed?.Name</td>
+                </tr>
+                <tr>
+                    <td>Powód przybycia: </td>
+                    <td class="fw-bold"> @Animal?.IncomeReason?.Name</td>
+                </tr>
+                @if (@Animal?.OutcomeDate != null)
+                {
+                    <tr>
+                        <td>Powód opuszczenia stada: </td>
+                        <td class="fw-bold"> @Animal?.OutcomeReason?.Name</td>
+                    </tr>
+                    <tr>
+                        <td>Data opuszczenia stada: </td>
+                        <td class="fw-bold"> @Animal?.OutcomeDate.Value.ToString("dd.MM.yyy")</td>
+                    </tr>
+                }
+            </table>
+            <a href="animals/form/@Animal?.Id" class="btn btn-primary">Edytuj</a>
+            <a class="btn btn-danger" @onclick="DeleteAnimal">Usuń</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int? AnimalId { get; set; }
+    private Animal? Animal { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Animal = await Http.GetFromJsonAsync<Animal>($"Animals/{AnimalId}");
+    }
+
+    private async Task DeleteAnimal()
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Czy napewno chcesz usunąć to zwierzę?");
+        if (confirmed)
+        {
+            await Http.DeleteAsync($"Animals/{AnimalId}");
+            NavManager.NavigateTo($"Animals");
+        }
+    }
+}

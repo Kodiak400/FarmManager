@@ -1,0 +1,182 @@
+﻿@page "/animals/form/{animalId:int?}"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.AspNetCore.Components
+@using FarmManager.Shared
+@using RestSharp;
+@using System.Collections.Generic;
+@using System.Text.Json;
+
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager navManager
+
+@if(AnimalId == null)
+{
+    <h1>Dodaj zwierzę do stada</h1>
+}
+else
+{
+    <h1>Edytuj zwierzę</h1>
+}
+<hr />
+<EditForm Model="@Animal" OnValidSubmit="@SaveAnimal">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                <p>
+                    <label for="identityNumber" class="form-label">Numer identyfikacyjny:</label>
+                    <InputText id="identityNumber" class="form-control" @bind-Value="Animal.IdentityNumber" />
+                </p>
+                <p>
+                    <label for="motherIdentityNumber" class="form-label">Numer identyfikacyjny matki:</label>
+                    <InputText id="motherIdentityNumber" class="form-control" @bind-Value="Animal.MotherIdentityNumber" />
+                </p>
+                <p>
+                    <label for="name" class="form-label">Nazwa:</label>
+                    <InputText id="name" class="form-control" @bind-Value="Animal.Name" />
+                </p>
+                <p>
+                    <label for="birthdate">Data urodzenia:</label>
+                    <InputDate id="birthdate" class="form-control" @bind-Value="Animal.Birthdate" />
+                </p>
+                <p>
+                    <label for="incomeDate" class="form-label">Data przybycia do stada:</label>
+                    <InputDate id="incomeDate" class="form-control" @bind-Value="Animal.IncomeDate" />
+                </p>
+            </div>
+            <div class="col">
+                <p>
+                    <label for="sex" class="form-label">Płeć:</label>
+                    <InputSelect placeholder="test" id="sex" @bind-Value="Animal.SexId" class="form-control">
+                        <option>Wybierz płeć</option>
+                        @if (Sexes?.Count() > 0)
+                        {
+                            @foreach (var sex in Sexes)
+                            {
+                                <option value="@sex.Id">@sex.Name</option>
+                            }
+                        }
+                    </InputSelect>
+                </p>
+                <p>
+                    <label for="species" class="form-label">Gatunek:</label>
+                    <InputSelect id="species" @bind-Value="Animal.SpeciesId" class="form-control" @onchange="SpeciesChanged">
+                        <option>Wybierz gatunek</option>
+                        @if (Species?.Count() > 0)
+                        {
+                            @foreach (var species in Species)
+                            {
+                                <option value="@species.Id">@species.Name</option>
+                            }
+                        }
+                    </InputSelect>
+                </p>
+                <p>
+                    <label for="breed" class="form-label">Rasa:</label>
+                    <InputSelect id="breed" @bind-Value="Animal.BreedId" class="form-control">
+                        <option>Wybierz rase</option>
+                        @if (Breeds?.Count() > 0)
+                        {
+                            @foreach (var breed in Breeds)
+                            {
+                                if (breed.SpeciesId.Equals(Animal.SpeciesId))
+                                {
+                                    <option value="@breed.Id">@breed.Name</option>
+                                }
+                            }
+                        }
+                    </InputSelect>
+                </p>
+                <p>
+                    <label for="incomeReason" class="form-label">Powód przybycia do stada:</label>
+                    <InputSelect id="incomeReason" @bind-Value="Animal.IncomeReasonId" class="form-control">
+                        <option>Wybierz powód</option>
+                        @if (IncomeReasons?.Count() > 0)
+                        {
+                            @foreach (var incomeReason in IncomeReasons)
+                            {
+                                if(incomeReason.Direction.Equals("Przychód"))
+                                {
+                                     <option value="@incomeReason.Id">@incomeReason.Name</option>
+                                }                               
+                            }
+                        }
+                    </InputSelect>
+                </p>
+                @if(AnimalId != null)
+                {
+                   <p>
+                    <label for="outcomeReason" class="form-label">Powód opusczenia stada:</label>
+                    <InputSelect id="outcomeReason" @bind-Value="Animal.OutcomeReasonId" class="form-control">
+                        <option>Wybierz powód</option>
+                        @if (IncomeReasons?.Count() > 0)
+                        {
+                            @foreach (var outcomeReason in IncomeReasons)
+                            {
+                                if(outcomeReason.Direction.Equals("Rozchód"))
+                                {
+                                     <option value="@outcomeReason.Id">@outcomeReason.Name</option>
+                                }                               
+                            }
+                        }
+                    </InputSelect>
+                </p>
+                <p>
+                    <label for="outcomeDate" class="form-label">Data opuszczenia stada:</label>
+                    <InputDate id="outcomeDate" class="form-control" @bind-Value="Animal.OutcomeDate" />
+                </p>
+                }
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Zapisz</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int? AnimalId { get; set; }
+
+    public IEnumerable<Breed>? allBreeds;
+    public IEnumerable<Sex>? Sexes { get; set; }
+    public IEnumerable<Species>? Species { get; set; }
+    public IEnumerable<Breed>? Breeds { get; set; }
+    public IEnumerable<TransferReason>? IncomeReasons { get; set; }
+    public Animal? Animal { get; set; }
+
+    private async void SaveAnimal()
+    {
+        if (AnimalId != null)
+        {
+            Http.PutAsJsonAsync<Animal>($"Animals/{AnimalId}", Animal);
+            navManager.NavigateTo($"Animals");
+        }
+        else
+        {
+            Http.PostAsJsonAsync<Animal>("Animals", Animal);     
+            navManager.NavigateTo($"Animals");
+        }
+    }
+
+    private void SpeciesChanged()
+    {
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Animal = new Animal();
+
+        if (AnimalId != null)
+        {
+            Animal = await Http.GetFromJsonAsync<Animal>($"Animals/{AnimalId}");            
+        }
+
+        Sexes = await Http.GetFromJsonAsync<IEnumerable<Sex>>("Sexes");
+        Species = await Http.GetFromJsonAsync<IEnumerable<Species>>("Species");
+        IncomeReasons = await Http.GetFromJsonAsync<IEnumerable<TransferReason>>("TransferReasons");
+        Breeds = await Http.GetFromJsonAsync<IEnumerable<Breed>>("Breeds");
+    }
+}

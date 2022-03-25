@@ -1,0 +1,24 @@
+﻿@page "/harvestsPurchase"
+@inject HttpClient Http
+<PageTitle>FarmManager</PageTitle>
+
+<h1>Skup zbóż</h1>
+<hr />
+<p>Poniżej znajdziesz aktualne ceny w skupach zbóż.</p>
+
+@if (html == null)
+{
+    <p>Wczytywanie...</p>
+}
+else
+{
+        @((MarkupString)html)
+}
+
+@code {
+    private string? html;
+    protected override async Task OnInitializedAsync()
+    {
+        html = await Http.GetStringAsync("CropsPurhchases");
+    }
+}

@@ -1,0 +1,148 @@
+﻿@page "/plantations/form/{plantationId:int?}"
+@using FarmManager.Shared.ViewModels
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.AspNetCore.Components
+@using FarmManager.Shared
+@using System.Collections.Generic;
+@using System.Text.Json;
+
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager navManager
+
+@if (PlantationId == null)
+{
+    <h1>Utwórz uprawę</h1>
+}
+else
+{
+    <h1>Edytuj uprawę</h1>
+}
+<hr />
+<EditForm Model="@Plantation" OnValidSubmit="@SavePlantation">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                <p>
+                    <label for="name" class="form-label">Nazwa uprawy</label>
+                    <InputText id="name" class="form-control" @bind-Value="Plantation.Name" />
+                </p>
+                <p>
+                    <label for="plant" class="form-label">Pole</label>
+                    <InputSelect id="plant" @bind-Value="Plantation.FieldId" class="form-control" @onchange="FieldChanged">
+                        <option></option>
+                        @if (Fields?.Count() > 0)
+                        {
+                            @foreach (var field in Fields)
+                            {
+                                <option value="@field.Id">@field.PlotNumber - @field.Location</option>
+                            }
+                        }
+                    </InputSelect>
+                </p>
+                <p>
+                    <label for="area" class="form-label">Powierzchnia [ha] (Maksymalnie @MaxPlantationArea)</label>
+                    <InputNumber max="@MaxPlantationArea" id="area" class="form-control" @bind-Value="Plantation.Area" />
+                </p>
+            </div>
+            <div class="col">
+                <p>
+                    <label for="plant" class="form-label">Roślina</label>
+                    <InputSelect id="plant" @bind-Value="Plantation.PlantId" class="form-control">
+                        <option></option>
+                        @if (Plants?.Count() > 0)
+                        {
+                            @foreach (var plant in Plants)
+                            {
+                                <option value="@plant.Id">@plant.Name</option>
+                            }
+                        }
+                    </InputSelect>
+                </p>
+                <p>
+                    <label for="growth" class="form-label">Etap wzrostu</label>
+                    <InputSelect id="growth" @bind-Value="Plantation.GrowthId" class="form-control">
+                        <option></option>
+                        @if (Growths?.Count() > 0)
+                        {
+                            @foreach (var growth in Growths)
+                            {
+                                <option value="@growth.Id">@growth.Name</option>
+                            }
+                        }
+                    </InputSelect>
+                </p>
+                <p>
+                    <label for="sowingDate">Data siewu</label>
+                    <InputDate id="sowingDate" class="form-control" @bind-Value="Plantation.SowingDate" />
+                </p>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Zapisz</button>
+</EditForm>
+
+@code {
+    [Microsoft.AspNetCore.Components.Parameter]
+    public int? PlantationId { get; set; }
+    public Plantation? Plantation { get; set; }
+    public List<Growth>? Growths { get; set; }
+    public List<Plant>? Plants { get; set; }
+    public List<Field>? Fields { get; set; }
+    public double MaxPlantationArea { get { return GetMaxPlantationArea(); } }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Plantation = new Plantation();
+
+        if (PlantationId != null)
+        {
+            var plantationViewModel = await Http.GetFromJsonAsync<PlantationViewModel>($"Plantations/{PlantationId}");
+
+            Plantation = plantationViewModel.Plantation;
+        }
+
+        Plants = await Http.GetFromJsonAsync<List<Plant>>("Plants");
+        Fields = await Http.GetFromJsonAsync<List<Field>>("Fields");
+        Growths = await Http.GetFromJsonAsync<List<Growth>>("Growths");
+    }
+
+    private double GetMaxPlantationArea()
+    {
+        var field = Fields?.SingleOrDefault(x => x.Id == Plantation?.FieldId);
+
+        if (field == null)
+            return 0;
+
+        if (PlantationId == null)
+            return field.Area - (double)field.SowedArea;
+        return field.Area - (double)field.SowedArea + (double)Plantation.Area;
+    }
+
+    private void FieldChanged()
+    {
+        if (Plantation != null)
+        {
+            var field = Fields?.SingleOrDefault(x => x.Id == Plantation.FieldId);
+            Plantation.Area = field.Area - (double)field.SowedArea;
+            StateHasChanged();
+        }
+    }
+
+    private async void SavePlantation()
+    {
+        if (PlantationId != null)
+        {
+            await Http.PutAsJsonAsync<Plantation>($"Plantations/{PlantationId}", Plantation);
+            navManager.NavigateTo($"Plantations");
+        }
+        else
+        {
+            await Http.PostAsJsonAsync<Plantation>("Plantations", Plantation);
+            navManager.NavigateTo($"Plantations");
+        }
+    }
+}
