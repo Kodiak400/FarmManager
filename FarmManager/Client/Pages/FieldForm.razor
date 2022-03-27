@@ -58,12 +58,14 @@ else
         if (FieldId != null)
         {
             Http.PutAsJsonAsync<Field>($"Fields/{FieldId}", Field);
-            navManager.NavigateTo($"Fields");
+            Thread.Sleep(1000);
+            navManager.NavigateTo($"fields");
         }
         else
         {
-            Http.PostAsJsonAsync<Field>("Fields", Field);     
-            navManager.NavigateTo($"Fields");
+            Http.PostAsJsonAsync<Field>("Fields", Field);  
+            Thread.Sleep(1000);
+            navManager.NavigateTo($"fields");
         }
     }      
 

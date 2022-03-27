@@ -151,12 +151,14 @@ else
         if (AnimalId != null)
         {
             Http.PutAsJsonAsync<Animal>($"Animals/{AnimalId}", Animal);
-            navManager.NavigateTo($"Animals");
+            Thread.Sleep(1000);
+            navManager.NavigateTo($"animals");
         }
         else
         {
             Http.PostAsJsonAsync<Animal>("Animals", Animal);     
-            navManager.NavigateTo($"Animals");
+            Thread.Sleep(1000);
+            navManager.NavigateTo($"animals");
         }
     }
 

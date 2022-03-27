@@ -126,12 +126,14 @@
 
 
         _client.PostAsJsonAsync<CropsCalculatorResult>("CropsCalculatorResults", Result);
+        Thread.Sleep(1000);
         navManager.NavigateTo($"/calculators/crops", forceLoad: true);
     }
 
     private void RemoveResult(int id)
     {
         _client.DeleteAsync($"CropsCalculatorResults/{id}");
+        Thread.Sleep(1000);
         navManager.NavigateTo($"/calculators/crops", forceLoad: true);
     }
 }

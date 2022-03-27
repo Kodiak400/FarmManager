@@ -99,6 +99,7 @@
         Result.SpeciesName = GetName();
 
         _client.PostAsJsonAsync<AnimalsCalculatorResult>("AnimalsCalculatorResults", Result);
+        Thread.Sleep(1000);
         navManager.NavigateTo($"/calculators/animals", forceLoad: true);
     }
 
@@ -132,6 +133,7 @@
     private void RemoveResult(int id)
     {
         _client.DeleteAsync($"AnimalsCalculatorResults/{id}");
+        Thread.Sleep(1000);
         navManager.NavigateTo($"/calculators/animals", forceLoad: true);
     }
 

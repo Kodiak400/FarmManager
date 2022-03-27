@@ -47,8 +47,6 @@ namespace FarmManager.Server.Controllers
                 formatted = formatted.Remove(match.Index, match.Length);
             }
 
-            formatted = formatted.Replace("class=\"table table-bordered top10\"", "class=\"table table - bordered top10\" style=\"font - size: 11px\"");
-
             return formatted;
         }
     }

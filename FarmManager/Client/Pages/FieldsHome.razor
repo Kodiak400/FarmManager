@@ -46,7 +46,7 @@ else
                 }
                 else
                 {
-                    <tr @onclick="() => RowClicked(field.Id)">
+                    <tr>
                         <td>@counter</td>
                         <td>@field.PlotNumber</td>
                         <td>@field.Area</td>
@@ -70,11 +70,6 @@ else
     {
         counter = 1;
         Fields = await Http.GetFromJsonAsync<List<Field>>("Fields");        
-    }
-
-    private void RowClicked(int fieldId)
-    {
-        navManager.NavigateTo($"field/details/{fieldId}");
     }
 
     public bool IsVisible(Field field)

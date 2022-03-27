@@ -137,12 +137,14 @@ else
         if (PlantationId != null)
         {
             await Http.PutAsJsonAsync<Plantation>($"Plantations/{PlantationId}", Plantation);
-            navManager.NavigateTo($"Plantations");
+            Thread.Sleep(1000);
+            navManager.NavigateTo($"plantations");
         }
         else
         {
             await Http.PostAsJsonAsync<Plantation>("Plantations", Plantation);
-            navManager.NavigateTo($"Plantations");
+            Thread.Sleep(1000);
+            navManager.NavigateTo($"plantations");
         }
     }
 }
