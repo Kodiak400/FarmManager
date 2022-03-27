@@ -7,17 +7,17 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-var connectionString = builder.Configuration.GetConnectionString("Azure");
-builder.Services.AddDbContext<FarmManagerContext>(options =>
-    options.UseSqlServer(connectionString));
+//var connectionString = builder.Configuration.GetConnectionString("Azure");
+builder.Services.AddDbContext<FarmManagerContext, SqliteFarmManagerContext>(options =>
+    options.UseSqlite());//UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
     .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<FarmManagerContext>();
+    .AddEntityFrameworkStores<SqliteFarmManagerContext>();
 
 builder.Services.AddIdentityServer()
-    .AddApiAuthorization<ApplicationUser, FarmManagerContext>();
+    .AddApiAuthorization<ApplicationUser, SqliteFarmManagerContext>();
 
 builder.Services.AddAuthentication()
     .AddIdentityServerJwt();
